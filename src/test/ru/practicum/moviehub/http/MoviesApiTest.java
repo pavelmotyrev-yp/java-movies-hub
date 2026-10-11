@@ -4,7 +4,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.practicum.moviehub.store.MoviesStore;
+import ru.practicum.moviehub.store.MoviesStoreImpl;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,7 +23,7 @@ public class MoviesApiTest {
 
     @BeforeAll
     static void beforeAll() {
-        server = new MoviesServer(new MoviesStore(), 8080);
+        server = new MoviesServer(new MoviesStoreImpl(), 8080);
         server.start();
         client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
     }

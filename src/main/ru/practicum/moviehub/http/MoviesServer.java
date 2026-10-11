@@ -10,13 +10,12 @@ public class MoviesServer {
     private final HttpServer server;
     private final MoviesStore moviesStore;
 
-    public MoviesServer(MoviesStore store,  int port) {
+    public MoviesServer(MoviesStore store, int port) {
         this.moviesStore = store;
 
         try {
             server = HttpServer.create(new InetSocketAddress(port), 0);
 
-            // Добавьте контекст для /movies и укажите созданный хендлер
             server.createContext("/movies", new MoviesHandler());
 
         } catch (IOException e) {
