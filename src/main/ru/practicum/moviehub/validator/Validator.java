@@ -6,6 +6,7 @@ public class Validator {
     }
 
     public static void validateMovieTitle(String title) {
+
     }
 
     public static void validateMovieYear(int year) {
