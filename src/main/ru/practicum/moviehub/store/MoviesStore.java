@@ -16,4 +16,6 @@ public interface MoviesStore {
     Optional<Movie> getMovie(int id);
 
     Optional<Movie> removeMovie(int id);
+
+    void removeAllMovies();
 }

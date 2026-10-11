@@ -40,6 +40,10 @@ public class MoviesStoreImpl implements MoviesStore {
         return Optional.ofNullable(movies.remove(id));
     }
 
+    public void removeAllMovies() {
+        movies.clear();
+    }
+
     private int getNextId() {
         id++;
         return id;

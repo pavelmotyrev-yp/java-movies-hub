@@ -6,14 +6,24 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 abstract class BaseHttpHandler implements HttpHandler {
-    protected static final String CT_JSON = "application/json; charset=UTF-8"; // !!! Укажите содержимое заголовка Content-Type
+    private static final int KEY_POSITION = 0;
+    private static final int VALUE_POSITION = 1;
+    private static final int MOVIES_ID_POSITION = 2;
+    private static final int STATUS_NO_CONTENT = 204;
+    private static final int DEFAULT_RESPONSE_LENGTH = -1;
+    private static final String QUERY_SPLIT_REGEX = "&";
+    private static final String PARAM_SPLIT_REGEX = "=";
+    private static final String PATH_SPLIT_REGEX = "/";
+    protected static final String CONTENT_TYPE = "Content-Type";
+    protected static final String CT_JSON = "application/json; charset=UTF-8";
 
     protected void sendJson(HttpExchange ex, int status, String json) throws IOException {
-        // !!! Реализуйте общий для всех хендлеров метод
-        // для отправки ответа с телом в формате JSON
-        ex.getResponseHeaders().set("Content-Type", CT_JSON);
+        ex.getResponseHeaders().set(CONTENT_TYPE, CT_JSON);
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, bytes.length);
         try (OutputStream os = ex.getResponseBody()) {
@@ -22,9 +32,31 @@ abstract class BaseHttpHandler implements HttpHandler {
     }
 
     protected void sendNoContent(HttpExchange ex) throws java.io.IOException {
-        // !!! Реализуйте общий для всех хендлеров метод
-        // для отправки ответа без тела и кодом 204
-        ex.getResponseHeaders().set("Content-Type", CT_JSON);
-        ex.sendResponseHeaders(204, -1);
+        ex.getResponseHeaders().set(CONTENT_TYPE, CT_JSON);
+        ex.sendResponseHeaders(STATUS_NO_CONTENT, DEFAULT_RESPONSE_LENGTH);
+    }
+
+    protected Map<String, String> parseQueryParam(String query) {
+        System.out.println("DEBUG: parseQueryParam() query: " + query);
+        if (query == null || query.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> result = new HashMap<>();
+        for (String param : query.split(QUERY_SPLIT_REGEX)) {
+            String[] pair = param.split(PARAM_SPLIT_REGEX);
+            result.put(pair[KEY_POSITION], pair[VALUE_POSITION]);
+        }
+        return result;
+    }
+
+    protected String parseMoviesIdValue(String path) {
+        System.out.println("DEBUG: parseMoviesIdValue() path: " + path);
+        String[] pathSplit = path.split(PATH_SPLIT_REGEX);
+        if (pathSplit.length >= MOVIES_ID_POSITION) {
+            return pathSplit[MOVIES_ID_POSITION];
+        } else {
+            return "";
+        }
     }
 }
