@@ -24,6 +24,7 @@ abstract class BaseHttpHandler implements HttpHandler {
 
     protected void sendJson(HttpExchange ex, int status, String json) throws IOException {
         ex.getResponseHeaders().set(CONTENT_TYPE, CT_JSON);
+        ex.getResponseHeaders().add("Connection", "close");
         byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         ex.sendResponseHeaders(status, bytes.length);
         try (OutputStream os = ex.getResponseBody()) {
@@ -53,7 +54,7 @@ abstract class BaseHttpHandler implements HttpHandler {
     protected String parseMoviesIdValue(String path) {
         System.out.println("DEBUG: parseMoviesIdValue() path: " + path);
         String[] pathSplit = path.split(PATH_SPLIT_REGEX);
-        if (pathSplit.length >= MOVIES_ID_POSITION) {
+        if (pathSplit.length > MOVIES_ID_POSITION) {
             return pathSplit[MOVIES_ID_POSITION];
         } else {
             return "";

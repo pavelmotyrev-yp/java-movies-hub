@@ -5,7 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpExchange;
-import ru.practicum.moviehub.exception.*;
+import ru.practicum.moviehub.exception.BadRequestException;
+import ru.practicum.moviehub.exception.ErrorResponse;
+import ru.practicum.moviehub.exception.NotFoundException;
+import ru.practicum.moviehub.exception.ValidationException;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.model.MovieDTO;
 import ru.practicum.moviehub.service.MoviesService;
@@ -13,13 +16,14 @@ import ru.practicum.moviehub.service.MoviesService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class MoviesHandler extends BaseHttpHandler {
     private static final int STATUS_OK = 200;
     private static final int STATUS_CREATED = 201;
     private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
-    private static final int STATUS_UNSUPPORTED_MEDIA_TYPE = 415;
+    private static final int STATUS_METHOD_NOT_ALLOWED = 405;
     private static final int STATUS_NOT_FOUND = 404;
     private static final int STATUS_BAD_REQUEST = 400;
     private static final String PARAM_YEAR = "year";
@@ -39,30 +43,27 @@ public class MoviesHandler extends BaseHttpHandler {
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-        System.out.println("DEBUG: handle()");
         try {
             String method = ex.getRequestMethod();
-            if (!ex.getRequestHeaders().containsKey(CONTENT_TYPE)) {
-                throw new UnsupportedMediaTypeException("Content-Type");
-            }
             if (method.equalsIgnoreCase(METHOD_GET)) {
-                System.out.println("DEBUG: switchMethodGet");
                 runMethodGet(ex);
             } else if (method.equalsIgnoreCase(METHOD_POST)) {
                 runMethodPost(ex);
             } else if (method.equalsIgnoreCase(METHOD_DELETE)) {
                 runMethodDelete(ex);
             } else {
-                throw new InvalidEndPointException("Method not supported: " + method);
+                ErrorResponse errorResponse = new ErrorResponse("Method not allowed", List.of("Method: " + method));
+                sendJson(ex, STATUS_METHOD_NOT_ALLOWED, gson.toJson(errorResponse));
             }
         } catch (ValidationException e) {
-            sendJson(ex, STATUS_UNPROCESSABLE_ENTITY, gson.toJson(e.getMessage()));
-        } catch (UnsupportedMediaTypeException e) {
-            sendJson(ex, STATUS_UNSUPPORTED_MEDIA_TYPE, gson.toJson(e.getMessage()));
+            ErrorResponse errorResponse = new ErrorResponse("Validation failed", List.of(e.getMessage()));
+            sendJson(ex, STATUS_UNPROCESSABLE_ENTITY, gson.toJson(errorResponse));
         } catch (NotFoundException e) {
-            sendJson(ex, STATUS_NOT_FOUND, gson.toJson(e.getMessage()));
-        } catch (BadRequestException | InvalidEndPointException e) {
-            sendJson(ex, STATUS_BAD_REQUEST, gson.toJson(e.getMessage()));
+            ErrorResponse errorResponse = new ErrorResponse("Not found", List.of(e.getMessage()));
+            sendJson(ex, STATUS_NOT_FOUND, gson.toJson(errorResponse));
+        } catch (BadRequestException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Bad request", List.of(e.getMessage()));
+            sendJson(ex, STATUS_BAD_REQUEST, gson.toJson(errorResponse));
         }
     }
 
@@ -92,26 +93,20 @@ public class MoviesHandler extends BaseHttpHandler {
     private void runMethodGet(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
         String query = ex.getRequestURI().getQuery();
-        System.out.println("DEBUG: runMethodGet() path: " + path + ", query: " + query);
         Map<String, String> queryMap = parseQueryParam(query);
         String id = parseMoviesIdValue(path);
-        System.out.println("DEBUG: queryMap: " + queryMap + ", id: " + id);
         if ((id == null || id.isEmpty()) && queryMap.isEmpty()) {
-            System.out.println("DEBUG: должен был попасть сюда");
             Collection<Movie> movies = moviesService.getMovies();
-            String moviesGson = gson.toJson(movies);
-            sendJson(ex, STATUS_OK, moviesGson);
+            sendJson(ex, STATUS_OK, gson.toJson(movies));
         } else if (id != null && !id.isEmpty()) {
             int movieId = parseInt(id);
             Movie movie = moviesService.getMovie(movieId);
-            String movieGson = gson.toJson(movie);
-            sendJson(ex, STATUS_OK, movieGson);
+            sendJson(ex, STATUS_OK, gson.toJson(movie));
         } else {
             String stringYear = queryMap.get(PARAM_YEAR);
             int year = parseInt(stringYear);
             Collection<Movie> movies = moviesService.getMoviesByYear(year);
-            String moviesGson = gson.toJson(movies);
-            sendJson(ex, STATUS_OK, moviesGson);
+            sendJson(ex, STATUS_OK, gson.toJson(movies));
         }
     }
 
