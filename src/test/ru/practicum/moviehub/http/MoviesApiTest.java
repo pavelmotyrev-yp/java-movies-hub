@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class MoviesApiTest {
     private static final String BASE = "http://localhost:8080";
-    private static MoviesServer server;
+    private static MainController server;
     private static HttpClient client;
     private static MoviesStore store;
     private static Gson gson = new Gson();
@@ -33,7 +33,7 @@ public class MoviesApiTest {
     @BeforeAll
     static void beforeAll() {
         store = new MoviesStoreImpl();
-        server = new MoviesServer(new MoviesServiceImpl(store), 8080);
+        server = new MainController(new MoviesServiceImpl(store), 8080);
         server.start();
         client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
     }

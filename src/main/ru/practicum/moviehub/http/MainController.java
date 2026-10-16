@@ -6,10 +6,10 @@ import ru.practicum.moviehub.service.MoviesService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-public class MoviesServer {
+public class MainController {
     private final HttpServer server;
 
-    public MoviesServer(MoviesService moviesService, int port) {
+    public MainController(MoviesService moviesService, int port) {
         try {
             server = HttpServer.create(new InetSocketAddress(port), 0);
             server.createContext("/movies", new MoviesHandler(moviesService));
