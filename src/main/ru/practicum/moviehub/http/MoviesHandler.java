@@ -1,14 +1,9 @@
 package ru.practicum.moviehub.http;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
-import ru.practicum.moviehub.exception.BadRequestException;
-import ru.practicum.moviehub.exception.ErrorResponse;
-import ru.practicum.moviehub.exception.NotFoundException;
-import ru.practicum.moviehub.exception.ValidationException;
+import ru.practicum.moviehub.exception.*;
 import ru.practicum.moviehub.model.Movie;
 import ru.practicum.moviehub.model.MovieDTO;
 import ru.practicum.moviehub.service.MoviesService;
@@ -23,6 +18,7 @@ public class MoviesHandler extends BaseHttpHandler {
     private static final int STATUS_OK = 200;
     private static final int STATUS_CREATED = 201;
     private static final int STATUS_UNPROCESSABLE_ENTITY = 422;
+    private static final int STATUS_UNSUPPORTED_MEDIA_TYPE = 415;
     private static final int STATUS_METHOD_NOT_ALLOWED = 405;
     private static final int STATUS_NOT_FOUND = 404;
     private static final int STATUS_BAD_REQUEST = 400;
@@ -44,26 +40,45 @@ public class MoviesHandler extends BaseHttpHandler {
     @Override
     public void handle(HttpExchange ex) throws IOException {
         try {
-            String method = ex.getRequestMethod();
-            if (method.equalsIgnoreCase(METHOD_GET)) {
-                runMethodGet(ex);
-            } else if (method.equalsIgnoreCase(METHOD_POST)) {
-                runMethodPost(ex);
-            } else if (method.equalsIgnoreCase(METHOD_DELETE)) {
-                runMethodDelete(ex);
-            } else {
-                ErrorResponse errorResponse = new ErrorResponse("Method not allowed", List.of("Method: " + method));
-                sendJson(ex, STATUS_METHOD_NOT_ALLOWED, gson.toJson(errorResponse));
-            }
+            runController(ex);
         } catch (ValidationException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Validation failed", List.of(e.getMessage()));
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage(), List.of(e.getMessage()));
             sendJson(ex, STATUS_UNPROCESSABLE_ENTITY, gson.toJson(errorResponse));
         } catch (NotFoundException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Not found", List.of(e.getMessage()));
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage(), List.of(e.getMessage()));
             sendJson(ex, STATUS_NOT_FOUND, gson.toJson(errorResponse));
+        } catch (UnsupportedMediaTypeException e) {
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage(),
+                    List.of("Content-Type must be application/json"));
+            sendJson(ex, STATUS_UNSUPPORTED_MEDIA_TYPE, gson.toJson(errorResponse));
         } catch (BadRequestException e) {
-            ErrorResponse errorResponse = new ErrorResponse("Bad request", List.of(e.getMessage()));
+            ErrorResponse errorResponse = new ErrorResponse(e.getMessage(), List.of(e.getMessage()));
             sendJson(ex, STATUS_BAD_REQUEST, gson.toJson(errorResponse));
+        } catch (JsonSyntaxException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Invalid JSON", List.of(e.getMessage()));
+            sendJson(ex, STATUS_BAD_REQUEST, gson.toJson(errorResponse));
+        } catch (NumberFormatException e) {
+            ErrorResponse errorResponse = new ErrorResponse("Invalid path param value",
+                    List.of("Invalid field value: " + PARAM_YEAR));
+            sendJson(ex, STATUS_BAD_REQUEST, gson.toJson(errorResponse));
+        }
+    }
+
+    private void runController(HttpExchange ex) throws IOException {
+        String method = ex.getRequestMethod();
+        switch (method) {
+            case METHOD_POST:
+                runMethodPost(ex);
+                break;
+            case METHOD_DELETE:
+                runMethodDelete(ex);
+                break;
+            case METHOD_GET:
+                runMethodGet(ex);
+                break;
+            default:
+                ErrorResponse errorResponse = new ErrorResponse("Method not allowed", List.of("Method: " + method));
+                sendJson(ex, STATUS_METHOD_NOT_ALLOWED, gson.toJson(errorResponse));
         }
     }
 
@@ -76,38 +91,48 @@ public class MoviesHandler extends BaseHttpHandler {
     }
 
     private void runMethodPost(HttpExchange ex) throws IOException {
-        String requestBody = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        JsonElement jsonElement = JsonParser.parseString(requestBody);
-        if (jsonElement.isJsonObject()) {
-            JsonObject jsonObject = jsonElement.getAsJsonObject();
-            String title = jsonObject.get(PARAM_TITLE).getAsString();
-            int year = jsonObject.get(PARAM_YEAR).getAsInt();
-            MovieDTO movieDTO = new MovieDTO(title, year);
-            Movie movie = moviesService.addMovie(movieDTO);
-            sendJson(ex, STATUS_CREATED, gson.toJson(movie));
-        } else {
-            throw new ValidationException("Invalid request body: " + requestBody);
+        String contentType = ex.getRequestHeaders().getFirst(CONTENT_TYPE);
+        if (contentType == null || !contentType.contains("application/json")) {
+            throw new UnsupportedMediaTypeException("Unsupported Media Type");
         }
+        String requestBody = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        MovieDTO movieDTO = gson.fromJson(requestBody, MovieDTO.class);
+        Movie movie = moviesService.addMovie(movieDTO);
+        sendJson(ex, STATUS_CREATED, gson.toJson(movie));
     }
 
     private void runMethodGet(HttpExchange ex) throws IOException {
-        String path = ex.getRequestURI().getPath();
         String query = ex.getRequestURI().getQuery();
-        Map<String, String> queryMap = parseQueryParam(query);
-        String id = parseMoviesIdValue(path);
-        if ((id == null || id.isEmpty()) && queryMap.isEmpty()) {
-            Collection<Movie> movies = moviesService.getMovies();
-            sendJson(ex, STATUS_OK, gson.toJson(movies));
-        } else if (id != null && !id.isEmpty()) {
-            int movieId = parseInt(id);
-            Movie movie = moviesService.getMovie(movieId);
-            sendJson(ex, STATUS_OK, gson.toJson(movie));
+        if (query != null) {
+            runMethodGetWithFilterByYear(ex, query);
         } else {
-            String stringYear = queryMap.get(PARAM_YEAR);
-            int year = parseInt(stringYear);
-            Collection<Movie> movies = moviesService.getMoviesByYear(year);
-            sendJson(ex, STATUS_OK, gson.toJson(movies));
+            String path = ex.getRequestURI().getPath();
+            String stringId = parseMoviesIdValue(path);
+            if (stringId.isEmpty()) {
+                runMethodGetAllMovies(ex);
+            } else {
+                runMethodGetById(ex, stringId);
+            }
         }
+    }
+
+    private void runMethodGetAllMovies(HttpExchange ex) throws IOException {
+        Collection<Movie> movies = moviesService.getMovies();
+        sendJson(ex, STATUS_OK, gson.toJson(movies));
+    }
+
+    private void runMethodGetById(HttpExchange ex, String stringId) throws IOException {
+        int movieId = parseInt(stringId);
+        Movie movie = moviesService.getMovie(movieId);
+        sendJson(ex, STATUS_OK, gson.toJson(movie));
+    }
+
+    private void runMethodGetWithFilterByYear(HttpExchange ex, String query) throws IOException {
+        Map<String, String> queryMap = parseQueryParam(query);
+        String stringYear = queryMap.get(PARAM_YEAR);
+        int year = parseInt(stringYear);
+        Collection<Movie> movies = moviesService.getMoviesByYear(year);
+        sendJson(ex, STATUS_OK, gson.toJson(movies));
     }
 
     private int parseInt(String value) {
@@ -117,5 +142,4 @@ public class MoviesHandler extends BaseHttpHandler {
             throw new BadRequestException("Value is not a number: " + value);
         }
     }
-
 }

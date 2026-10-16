@@ -38,7 +38,6 @@ abstract class BaseHttpHandler implements HttpHandler {
     }
 
     protected Map<String, String> parseQueryParam(String query) {
-        System.out.println("DEBUG: parseQueryParam() query: " + query);
         if (query == null || query.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -52,7 +51,6 @@ abstract class BaseHttpHandler implements HttpHandler {
     }
 
     protected String parseMoviesIdValue(String path) {
-        System.out.println("DEBUG: parseMoviesIdValue() path: " + path);
         String[] pathSplit = path.split(PATH_SPLIT_REGEX);
         if (pathSplit.length > MOVIES_ID_POSITION) {
             return pathSplit[MOVIES_ID_POSITION];
