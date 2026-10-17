@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.practicum.moviehub.exception.ErrorResponse;
 import ru.practicum.moviehub.model.Movie;
-import ru.practicum.moviehub.model.MovieDTO;
+import ru.practicum.moviehub.model.MovieDto;
 import ru.practicum.moviehub.service.MoviesServiceImpl;
 import ru.practicum.moviehub.store.MoviesStore;
 import ru.practicum.moviehub.store.MoviesStoreImpl;
@@ -71,8 +71,8 @@ public class MoviesApiTest {
 
     @Test
     void getMovies_whenHasMovies_returnsList() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
-        store.addMovie(new MovieDTO("The Matrix", 1999));
+        store.addMovie(new MovieDto("Dune", 2021));
+        store.addMovie(new MovieDto("The Matrix", 1999));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies"))
@@ -296,7 +296,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovie_whenExists_returnsMovie() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
+        store.addMovie(new MovieDto("Dune", 2021));
 
         Movie movie = store.getMovies().stream().findFirst().get();
 
@@ -322,7 +322,7 @@ public class MoviesApiTest {
 
     @Test
     void getMovie_whenNotFound_returns404() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
+        store.addMovie(new MovieDto("Dune", 2021));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies/99999"))
@@ -368,7 +368,7 @@ public class MoviesApiTest {
 
     @Test
     void deleteMovie_whenExists_returns204() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
+        store.addMovie(new MovieDto("Dune", 2021));
 
         Movie movie = store.getMovies().stream().findFirst().get();
 
@@ -433,9 +433,9 @@ public class MoviesApiTest {
 
     @Test
     void getMoviesByYear_whenExists_returnsMovies() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
-        store.addMovie(new MovieDTO("The Matrix", 1999));
-        store.addMovie(new MovieDTO("Dune: Part Two", 2021));
+        store.addMovie(new MovieDto("Dune", 2021));
+        store.addMovie(new MovieDto("The Matrix", 1999));
+        store.addMovie(new MovieDto("Dune: Part Two", 2021));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies?year=2021"))
@@ -458,7 +458,7 @@ public class MoviesApiTest {
 
     @Test
     void getMoviesByYear_whenNoneFound_returnsEmptyList() throws Exception {
-        store.addMovie(new MovieDTO("Dune", 2021));
+        store.addMovie(new MovieDto("Dune", 2021));
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(BASE + "/movies?year=2000"))

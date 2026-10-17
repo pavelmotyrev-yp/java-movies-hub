@@ -7,5 +7,5 @@ package ru.practicum.moviehub.model;
  * @param title название фильма
  * @param year  год выпуска фильма
  */
-public record MovieDTO(String title, int year) {
+public record MovieDto(String title, int year) {
 }

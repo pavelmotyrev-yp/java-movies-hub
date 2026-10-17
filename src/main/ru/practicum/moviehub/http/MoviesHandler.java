@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.sun.net.httpserver.HttpExchange;
 import ru.practicum.moviehub.exception.*;
 import ru.practicum.moviehub.model.Movie;
-import ru.practicum.moviehub.model.MovieDTO;
+import ru.practicum.moviehub.model.MovieDto;
 import ru.practicum.moviehub.service.MoviesService;
 
 import java.io.IOException;
@@ -96,7 +96,7 @@ public class MoviesHandler extends BaseHttpHandler {
             throw new UnsupportedMediaTypeException("Unsupported Media Type");
         }
         String requestBody = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        MovieDTO movieDTO = gson.fromJson(requestBody, MovieDTO.class);
+        MovieDto movieDTO = gson.fromJson(requestBody, MovieDto.class);
         Movie movie = moviesService.addMovie(movieDTO);
         sendJson(ex, STATUS_CREATED, gson.toJson(movie));
     }

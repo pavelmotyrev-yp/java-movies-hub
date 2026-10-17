@@ -2,7 +2,7 @@ package ru.practicum.moviehub.service;
 
 import ru.practicum.moviehub.exception.NotFoundException;
 import ru.practicum.moviehub.model.Movie;
-import ru.practicum.moviehub.model.MovieDTO;
+import ru.practicum.moviehub.model.MovieDto;
 import ru.practicum.moviehub.store.MoviesStore;
 import ru.practicum.moviehub.validator.Validator;
 
@@ -20,7 +20,7 @@ public class MoviesServiceImpl implements MoviesService {
         return store.getMovies();
     }
 
-    public Movie addMovie(MovieDTO movie) {
+    public Movie addMovie(MovieDto movie) {
         Validator.validateMovieTitle(movie.title());
         Validator.validateMovieYear(movie.year());
         return store.addMovie(movie);

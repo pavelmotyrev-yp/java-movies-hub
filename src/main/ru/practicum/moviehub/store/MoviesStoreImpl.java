@@ -1,7 +1,7 @@
 package ru.practicum.moviehub.store;
 
 import ru.practicum.moviehub.model.Movie;
-import ru.practicum.moviehub.model.MovieDTO;
+import ru.practicum.moviehub.model.MovieDto;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ public class MoviesStoreImpl implements MoviesStore {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    public Movie addMovie(MovieDTO movie) {
+    public Movie addMovie(MovieDto movie) {
         int movieId = getNextId();
         Movie savedMovie = new Movie(movieId, movie.title(), movie.year());
         movies.put(movieId, savedMovie);

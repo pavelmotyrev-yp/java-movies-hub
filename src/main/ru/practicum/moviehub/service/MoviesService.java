@@ -1,7 +1,7 @@
 package ru.practicum.moviehub.service;
 
 import ru.practicum.moviehub.model.Movie;
-import ru.practicum.moviehub.model.MovieDTO;
+import ru.practicum.moviehub.model.MovieDto;
 
 import java.util.Collection;
 
@@ -31,7 +31,7 @@ public interface MoviesService {
      * @param movie объект с данными о фильме
      * @return добавленный фильм с присвоенным идентификатором
      */
-    Movie addMovie(MovieDTO movie);
+    Movie addMovie(MovieDto movie);
 
     /**
      * Возвращает фильм по идентификатору.
